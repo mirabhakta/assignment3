@@ -1,0 +1,10 @@
+resources/config.properties
+src/test
+# IntelliJ project files
+.idea/
+out/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
