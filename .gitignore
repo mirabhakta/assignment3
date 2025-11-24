@@ -1,5 +1,6 @@
 resources/config.properties
 src/test
+
 # IntelliJ project files
 .idea/
 out/
