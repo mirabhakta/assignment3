@@ -8,6 +8,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
 
 // Main application window for the writing assistant
 // Sets up the layout, menus, and connects the UI to the controller and session model.
@@ -87,8 +93,11 @@ public class MainFrame {
                 default -> WritingMode.PROFESSIONAL;
             };
 
-            // send request (async handled in controller)
-            controller.onGenerate(text, mode);
+            // Merge editor text + file contents before sending
+            String combined = mergeEditorTextWithAttachments(text);
+
+            // Send request
+            controller.onGenerate(combined, mode);
         });
 
         // sync model -> UI
@@ -98,7 +107,53 @@ public class MainFrame {
         frame.setVisible(true);
     }
 
-    // listens for session state changes and updates the UI accordingly
+    // Reads attached files and appends them to the user text
+    private String mergeEditorTextWithAttachments(String userText) {
+        List<Path> files = attachmentsPanel.getFiles();
+        if (files == null || files.isEmpty()) return userText;
+
+        final int MAX_CHARS_PER_FILE = 6000;
+        final int MAX_TOTAL_CHARS = 15000;
+
+        StringBuilder sb = new StringBuilder(userText);
+        sb.append("\n\n---\nATTACHMENTS (for reference)\n");
+
+        int totalAdded = 0;
+
+        for (Path p : files) {
+            if (p == null) continue;
+
+            sb.append("\n[FILE: ").append(p.getFileName()).append("]\n");
+
+            try {
+                String content = Files.readString(p, StandardCharsets.UTF_8);
+
+                if (content.length() > MAX_CHARS_PER_FILE) {
+                    content = content.substring(0, MAX_CHARS_PER_FILE)
+                            + "\n... (truncated)";
+                }
+
+                // enforce a total cap
+                int remaining = MAX_TOTAL_CHARS - totalAdded;
+                if (remaining <= 0) {
+                    sb.append("... (more attachments omitted: input too large)\n");
+                    break;
+                }
+                if (content.length() > remaining) {
+                    content = content.substring(0, remaining) + "\n... (truncated total)";
+                }
+
+                sb.append(content).append("\n");
+                totalAdded += content.length();
+            } catch (IOException e) {
+                sb.append("(Could not read file: ").append(e.getMessage()).append(")\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    // Listens for session state changes and updates the UI accordingly
     private void wireModelToUI() {
         session.addPropertyChangeListener(evt -> {
             switch (evt.getPropertyName()) {
@@ -130,3 +185,5 @@ public class MainFrame {
         rightCard.repaint();
     }
 }
+
+

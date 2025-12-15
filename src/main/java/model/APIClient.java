@@ -34,7 +34,7 @@ public final class APIClient {
         } catch (Exception ignored) {}
 
         if (p.isEmpty()) {
-            try (InputStream in = new FileInputStream("resources/config.properties")) {
+            try (InputStream in = new FileInputStream("resources/config.properties.example")) {
                 p.load(in);
             } catch (Exception ignored) {}
         }

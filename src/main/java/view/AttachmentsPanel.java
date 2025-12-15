@@ -71,4 +71,12 @@ public class AttachmentsPanel extends JPanel{
             model.removeElement(sel.get(i));
         }
     }
+    public List<Path> getFiles(){
+        List<Path> out = new ArrayList<>();
+        for (int i = 0; i < model.size(); i++){
+            out.add(model.get(i));
+
+        }
+        return out;
+    }
 }

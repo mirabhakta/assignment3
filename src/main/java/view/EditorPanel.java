@@ -1,21 +1,28 @@
 package view;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.DefaultEditorKit;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.function.Consumer;
 
+
 //  Text editor panel where users can paste or type their writing.
+
 
 public class EditorPanel extends JPanel{
     private final JTextArea editor = new JTextArea();
     private final JButton enterBtn = new JButton("Enter");
     private Consumer<String> onEnter = _ -> {};
 
+
     // Builds editor layout and sets up event handling
     public EditorPanel(){
         setLayout(new BorderLayout());
-
         setBorder(new EmptyBorder(12, 12, 12, 12));
+
+
+
 
         // Configure editor appearance and paper here
         final String placeholder = "Paste your paper here...";
@@ -25,19 +32,58 @@ public class EditorPanel extends JPanel{
         editor.setWrapStyleWord(true);
         editor.setFont(editor.getFont().deriveFont(15f));
 
+
+        // Clear placeholder
+        editor.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (editor.getText().equals(placeholder)){
+                    editor.selectAll();
+                }
+            }
+
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (editor.getText().isBlank()){
+                    editor.setText(placeholder);
+                    editor.setForeground(Color.BLACK);
+                }
+            }
+        });
+        // clears placeholder if user types
+        editor.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                if (editor.getText().equals(placeholder)){
+                    editor.setText("");
+                    editor.setForeground(Color.BLACK);
+                }
+            }
+        });
         // Scrollable text area
-        JScrollPane scroll = new JScrollPane(editor);
+        JScrollPane scroll = new JScrollPane(
+                editor,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         // Bottom bar with the Enter button
         JPanel bottomBar = new JPanel(new BorderLayout());
         bottomBar.setBorder(new EmptyBorder(10, 0,0 ,0));
         bottomBar.add(enterBtn, BorderLayout.EAST);
 
+
+
+
         // Defines what happens when the user submits text
         Runnable send = () -> {
             String text = editor.getText();
-            if (text.equals(placeholder) || text.isBlank()) return;
+            //sends empty text if it equals the placeholder
+            if (text.equals(placeholder)) text = "";
             onEnter.accept(text); // trigger callback
         };
+
+
+
 
         // Button and Enter-key trigger the same action
         enterBtn.addActionListener(_ -> send.run());
@@ -46,14 +92,41 @@ public class EditorPanel extends JPanel{
             @Override public void actionPerformed(java.awt.event.ActionEvent e) { send.run(); }
         });
 
+
+        //Ctrl V to use paste
+        int PASTE = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        editor.getInputMap(JComponent.WHEN_FOCUSED).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_V, PASTE),
+                DefaultEditorKit.pasteAction
+        );
+
+
+
+
+
+
+
+
         // Adds components to layout
         add(scroll, BorderLayout.CENTER);
         add(bottomBar, BorderLayout.SOUTH);
 
-        
+
+
+
+
+
+
+
     }
     // Sets the handler to run when the user presses Enter or clicks the button
     public void setOnEnter(Consumer<String> handler){this.onEnter = handler != null ? handler : _ -> {};}
     // Returns the current text from the editor
-    public String getText(){return editor.getText();}
+    //public String getText(){return editor.getText();}
 }
+
+
+
+
+
+
